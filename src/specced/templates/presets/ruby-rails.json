@@ -1,0 +1,16 @@
+{
+  "name": "ruby-rails",
+  "description": "Ruby on Rails app (rubocop + rspec).",
+  "language": "ruby",
+  "detect": { "any_frameworks": ["rails"], "priority": 60 },
+  "make": {
+    "fmt": "bundle exec rubocop -A",
+    "lint": "bundle exec rubocop",
+    "test": "bundle exec rspec",
+    "build": "bundle exec rails zeitwerk:check"
+  },
+  "tracks": ["app"],
+  "mcp_servers": ["postgres", "github", "context7"],
+  "rules": ["app/models.md", "app/controllers.md", "app/migrations.md"],
+  "code_review": ["01-models-migrations.md", "02-controllers.md", "03-security.md", "04-tests.md"]
+}

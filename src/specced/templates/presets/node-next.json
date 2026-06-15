@@ -1,0 +1,16 @@
+{
+  "name": "node-next",
+  "description": "Next.js / React frontend (eslint + next build + vitest).",
+  "language": "node",
+  "detect": { "any_frameworks": ["next"], "priority": 52 },
+  "make": {
+    "fmt": "npm run format --if-present",
+    "lint": "npm run lint",
+    "test": "npm run test --if-present",
+    "build": "npm run build"
+  },
+  "tracks": ["frontend"],
+  "mcp_servers": ["github", "context7", "playwright"],
+  "rules": ["frontend/components.md", "frontend/data-fetching.md", "frontend/routing.md"],
+  "code_review": ["01-components.md", "02-data-fetching.md", "03-accessibility.md", "04-tests.md"]
+}

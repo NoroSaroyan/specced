@@ -1,0 +1,27 @@
+# {{PROJECT_NAME}} — verification vocabulary
+#
+# These targets ARE the acceptance-criteria vocabulary for the proof loop.
+# When the spec-freezer writes "AC: `make test` passes", it means this file.
+# A preset prefills these; otherwise the bootstrap interview wires them to this
+# project's real commands. Keep each target fast and deterministic.
+
+.DEFAULT_GOAL := help
+.PHONY: help fmt lint test build verify
+
+help: ## List available targets
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+fmt: ## Auto-format the codebase
+	{{FMT_CMD}}
+
+lint: ## Lint (and type-check) the codebase
+	{{LINT_CMD}}
+
+test: ## Run the test suite
+	{{TEST_CMD}}
+
+build: ## Build the project
+	{{BUILD_CMD}}
+
+verify: fmt lint test build ## Run the full acceptance gate (used by the verifier)
+	@echo "verify: OK"

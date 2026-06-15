@@ -1,0 +1,16 @@
+{
+  "name": "java-spring",
+  "description": "Spring Boot service (Maven wrapper; spotless + JUnit). TODO: swap to Gradle if used.",
+  "language": "java",
+  "detect": { "any_frameworks": ["spring"], "priority": 65 },
+  "make": {
+    "fmt": "./mvnw spotless:apply",
+    "lint": "./mvnw -q verify -DskipTests",
+    "test": "./mvnw test",
+    "build": "./mvnw -q package -DskipTests"
+  },
+  "tracks": ["backend"],
+  "mcp_servers": ["postgres", "github", "context7"],
+  "rules": ["backend/architecture.md", "backend/controllers.md", "backend/data-and-migrations.md"],
+  "code_review": ["01-api.md", "02-data-and-migrations.md", "03-security.md", "04-tests.md"]
+}

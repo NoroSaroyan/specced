@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "specced"
+version = "0.1.0"
+description = "Interview-driven bootstrap for a reusable agentic coding setup: proof-loop engine + project rules + skills, installed into any repo."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Norik Saroyan", email = "noriksaroyan@gmail.com" }]
+keywords = [
+    "claude-code",
+    "agentic",
+    "coding-agent",
+    "scaffold",
+    "proof-loop",
+    "spec-driven",
+    "codex",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Code Generators",
+]
+
+[project.scripts]
+specced = "specced.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.6", "build"]
+
+[project.urls]
+Homepage = "https://github.com/NoroSaroyan/specced"
+Issues = "https://github.com/NoroSaroyan/specced/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/specced"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/README.md", "/LICENSE", "/NOTICE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# Never lint the bundled templates (they include the vendored engine + example code).
+extend-exclude = ["src/specced/templates"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length is owned by the formatter
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

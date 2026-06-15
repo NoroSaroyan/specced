@@ -1,0 +1,16 @@
+{
+  "name": "python",
+  "description": "Generic Python project (ruff + pytest).",
+  "language": "python",
+  "detect": { "any_frameworks": [], "priority": 70 },
+  "make": {
+    "fmt": "ruff format .",
+    "lint": "ruff check .",
+    "test": "pytest -q",
+    "build": "python -m build"
+  },
+  "tracks": ["src"],
+  "mcp_servers": ["github", "context7"],
+  "rules": ["python/conventions.md", "python/testing.md"],
+  "code_review": ["01-correctness.md", "02-tests.md"]
+}

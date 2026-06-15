@@ -1,0 +1,51 @@
+# Task Spec: {{TASK_ID}}
+
+## Metadata
+- Task ID: {{TASK_ID}}
+- Created: {{CREATED_AT}}
+- Repo root: {{REPO_ROOT}}
+- Working directory at init: {{WORKING_DIR}}
+
+## Guidance sources
+{{GUIDANCE_SOURCES}}
+
+> Read `CONSTITUTION.md` (project non-negotiables: OSS/EE build-tag boundary, licensing,
+> NFR budgets, ACL-correctness invariant) and the relevant `.claude/rules/*.md` before
+> freezing this spec. Cross-reference the authoritative design docs under `docs/design/`.
+
+## Original task statement
+{{TASK_STATEMENT}}
+
+## Acceptance criteria
+
+> **Every acceptance criterion MUST be a runnable command** — a `go test` target, a
+> `make` target, a `curl` against the running API, a `golangci-lint` invocation, an
+> eval-harness scenario, or a `grep`/script check. If it cannot be run, it is an opinion,
+> not a criterion: rewrite it until it can. Each AC names the exact command and the
+> observable pass condition the fresh verifier will reproduce.
+
+| ID  | Criterion | Command(s) | Pass condition |
+|-----|-----------|------------|----------------|
+| AC1 | TODO      | `TODO`     | TODO           |
+
+## NFR budgets in scope
+> List any `docs/design/NFRS.md` targets this task must measurably hold (e.g. `/retrieve`
+> p99 < 500 ms, revocation p99 < 10 s, `docker compose up` cold start < 60 s). Each becomes
+> a runnable AC above. Write "none" if not applicable.
+- TODO
+
+## Constraints
+- TODO
+
+## Non-goals
+- TODO
+
+## Verification plan
+- Build: `go build ./...` (plus `go build -tags=enterprise ./...` if `ee/` is touched)
+- Unit tests: `go test ./...`
+- Integration tests: TODO
+- Lint / vet: `golangci-lint run` and `go vet ./...`
+- OSS/EE boundary: `make check-boundary` (no `internal/` or `pkg/` import of `ee/`)
+- Eval scenarios: `make eval` (name the scenarios that must pass)
+- NFR checks: `make nfr-check` (name the budgets)
+- Manual checks: TODO

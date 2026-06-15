@@ -1,0 +1,20 @@
+specced
+Copyright (c) 2026 Norik Saroyan
+Licensed under the MIT License (see LICENSE).
+
+================================================================================
+Bundled third-party components
+================================================================================
+
+This distribution vendors the "repo-task-proof-loop" skill, which is the
+proof-loop engine specced installs into target repositories.
+
+  Component: repo-task-proof-loop
+  Author:    OpenAI
+  License:   Apache License 2.0
+  Location:  src/specced/templates/skills/repo-task-proof-loop/
+  License text: src/specced/templates/skills/repo-task-proof-loop/LICENSE
+
+The component is redistributed unmodified under the terms of the Apache License
+2.0. specced layers its own scaffolding (rules, code-review, constitution, MCP,
+Makefile vocabulary, and the bootstrap interview) around it; that layer is MIT.

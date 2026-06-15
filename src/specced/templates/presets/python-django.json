@@ -1,0 +1,16 @@
+{
+  "name": "python-django",
+  "description": "Django backend (ruff + manage.py check + pytest).",
+  "language": "python",
+  "detect": { "any_frameworks": ["django"], "priority": 80 },
+  "make": {
+    "fmt": "ruff format .",
+    "lint": "ruff check . && python manage.py check",
+    "test": "pytest -q",
+    "build": "python manage.py collectstatic --noinput"
+  },
+  "tracks": ["backend"],
+  "mcp_servers": ["postgres", "github", "context7"],
+  "rules": ["backend/models.md", "backend/views.md", "backend/migrations.md", "backend/api.md"],
+  "code_review": ["01-models-migrations.md", "02-views.md", "03-security.md", "04-tests.md"]
+}

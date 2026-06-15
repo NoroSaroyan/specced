@@ -1,0 +1,16 @@
+{
+  "name": "node-express",
+  "description": "Node/TypeScript backend API (Express or NestJS).",
+  "language": "node",
+  "detect": { "any_frameworks": ["express", "nestjs"], "priority": 50 },
+  "make": {
+    "fmt": "npm run format --if-present",
+    "lint": "npm run lint",
+    "test": "npm run test --if-present",
+    "build": "npm run build --if-present"
+  },
+  "tracks": ["backend"],
+  "mcp_servers": ["postgres", "github", "context7"],
+  "rules": ["backend/architecture.md", "backend/routes.md", "backend/data-and-migrations.md"],
+  "code_review": ["01-api.md", "02-data-and-migrations.md", "03-security.md", "04-tests.md"]
+}

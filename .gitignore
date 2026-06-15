@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Claude Code session-local settings (per-user, not shared)
+.claude/settings.local.json
+
+# specced never ignores its own templates; target repos manage their own .specced/

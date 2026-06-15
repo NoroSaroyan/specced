@@ -1,0 +1,16 @@
+{
+  "name": "rust",
+  "description": "Rust crate / workspace (rustfmt + clippy + cargo test).",
+  "language": "rust",
+  "detect": { "any_frameworks": [], "priority": 85 },
+  "make": {
+    "fmt": "cargo fmt",
+    "lint": "cargo clippy --all-targets -- -D warnings",
+    "test": "cargo test",
+    "build": "cargo build --release"
+  },
+  "tracks": ["src"],
+  "mcp_servers": ["github", "context7"],
+  "rules": ["rust/conventions.md", "rust/error-handling.md", "rust/testing.md"],
+  "code_review": ["01-correctness.md", "02-safety.md", "03-tests.md"]
+}

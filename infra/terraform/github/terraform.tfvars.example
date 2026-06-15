@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and adjust. Auth comes from the GITHUB_TOKEN env var.
+github_owner = "NoroSaroyan"
+repo_name    = "specced"
+visibility   = "public"
+
+# Solo repo: keep reviews off and admins unenforced. For a team:
+# required_approving_reviews = 1
+# enforce_admins             = true
+
+# If you rename CI jobs, update these to match the GitHub check contexts:
+# required_status_checks = ["test (3.10)", "test (3.11)", "test (3.12)", "test (3.13)", "smoke"]

@@ -1,0 +1,16 @@
+{
+  "name": "node",
+  "description": "Generic Node/TypeScript project.",
+  "language": "node",
+  "detect": { "any_frameworks": [], "priority": 40 },
+  "make": {
+    "fmt": "npm run format --if-present",
+    "lint": "npm run lint --if-present",
+    "test": "npm run test --if-present",
+    "build": "npm run build --if-present"
+  },
+  "tracks": ["src"],
+  "mcp_servers": ["github", "context7"],
+  "rules": ["node/conventions.md", "node/testing.md"],
+  "code_review": ["01-correctness.md", "02-tests.md"]
+}

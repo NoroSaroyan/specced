@@ -1,0 +1,26 @@
+{
+  "name": "python-fastapi",
+  "description": "FastAPI backend (ruff + mypy + pytest + alembic).",
+  "language": "python",
+  "detect": { "any_frameworks": ["fastapi"], "priority": 79 },
+  "make": {
+    "fmt": "ruff format .",
+    "lint": "ruff check . && mypy .",
+    "test": "pytest -q",
+    "build": "python -m build"
+  },
+  "tracks": ["backend"],
+  "mcp_servers": ["postgres", "github", "context7"],
+  "rules": [
+    "backend/architecture.md",
+    "backend/data-and-migrations.md",
+    "backend/api.md",
+    "backend/services.md"
+  ],
+  "code_review": [
+    "01-api.md",
+    "02-data-and-migrations.md",
+    "03-services.md",
+    "04-tests.md"
+  ]
+}

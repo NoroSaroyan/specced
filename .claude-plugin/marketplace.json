@@ -1,0 +1,15 @@
+{
+  "name": "specced",
+  "owner": { "name": "Norik Saroyan", "email": "noriksaroyan@gmail.com" },
+  "metadata": {
+    "description": "Interview-driven bootstrap for a reusable agentic coding setup.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "specced",
+      "source": "./plugin",
+      "description": "Bootstrap the specced agentic coding setup (proof-loop engine + rules + skills) into any repo via a stack-aware interview."
+    }
+  ]
+}

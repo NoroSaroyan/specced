@@ -1,0 +1,16 @@
+{
+  "name": "node-svelte",
+  "description": "SvelteKit frontend (eslint + svelte-check + vite build).",
+  "language": "node",
+  "detect": { "any_frameworks": ["svelte", "sveltejs"], "priority": 51 },
+  "make": {
+    "fmt": "npm run format --if-present",
+    "lint": "npm run lint",
+    "test": "npm run test --if-present",
+    "build": "npm run build"
+  },
+  "tracks": ["frontend"],
+  "mcp_servers": ["github", "context7", "playwright"],
+  "rules": ["frontend/components.md", "frontend/stores.md", "frontend/data-fetching.md"],
+  "code_review": ["01-components.md", "02-state.md", "03-accessibility.md", "04-tests.md"]
+}

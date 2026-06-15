@@ -1,0 +1,16 @@
+{
+  "name": "go",
+  "description": "Go module/monorepo (gofmt + golangci-lint + go test).",
+  "language": "go",
+  "detect": { "any_frameworks": [], "priority": 90 },
+  "make": {
+    "fmt": "gofmt -w .",
+    "lint": "golangci-lint run",
+    "test": "go test ./...",
+    "build": "go build ./..."
+  },
+  "tracks": ["go"],
+  "mcp_servers": ["github", "context7"],
+  "rules": ["go/conventions.md", "go/errors.md", "go/testing.md"],
+  "code_review": ["01-correctness.md", "02-api.md", "03-concurrency.md", "04-tests.md"]
+}
