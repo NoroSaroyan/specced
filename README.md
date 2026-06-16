@@ -10,6 +10,8 @@ specced is two things sharing one set of templates:
 - a **Claude Code plugin** whose `specced-bootstrap` skill *interviews you* — detects
   your stack, asks a few sharp questions, and writes the project-specific content.
 
+> **Just want to get going?** See **[QUICKSTART.md](QUICKSTART.md)** for the 2-minute path.
+
 ## What you get
 
 specced installs three layers into a repo:
