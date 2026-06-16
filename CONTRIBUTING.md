@@ -54,3 +54,24 @@ file. Don't hand-patch it; `specced sync` copies it verbatim into target repos.
 - Every CLI command prints JSON to stdout (the interview parses it).
 - Scaffolding is create-if-absent + idempotent; never clobber user content without `--force`.
 - No AI/assistant attribution in commits or PRs.
+
+## Releasing
+
+Publishing to PyPI uses **Trusted Publishing** (OIDC) via `.github/workflows/release.yml`
+— no API tokens are stored.
+
+One-time PyPI setup (project owner), at <https://pypi.org/manage/account/publishing/>:
+
+- PyPI project name: `specced`
+- Owner: `NoroSaroyan` · Repository: `specced`
+- Workflow: `release.yml` · Environment: `pypi`
+
+(Add it as a *pending publisher* before the first release; PyPI creates the project on
+first publish.) Optionally create a GitHub Environment named `pypi`
+(Settings → Environments) for release protection.
+
+To cut a release:
+
+1. Bump `version` in `pyproject.toml` (SemVer); update the changelog; `make verify`.
+2. Commit, then publish a GitHub Release with tag `vX.Y.Z` (must match the version).
+3. `release.yml` builds and publishes to PyPI. See the `release` skill for the full flow.
