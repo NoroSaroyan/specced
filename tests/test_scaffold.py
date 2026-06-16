@@ -167,3 +167,13 @@ def test_minimal_skips_agent_experience(repo: Path) -> None:
     claude = repo / "CLAUDE.md"
     assert claude.exists()  # engine managed block still present
     assert scaffold.ORIENTATION_START not in claude.read_text(encoding="utf-8")
+
+
+def test_doctor_warns_when_claude_gitignored(repo: Path) -> None:
+    import subprocess
+
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    (repo / ".gitignore").write_text(".claude/\n", encoding="utf-8")
+    scaffold.init_repo(repo, preset="python")
+    warnings = scaffold.doctor(repo)["warnings"]
+    assert any("git-ignored" in w for w in warnings)

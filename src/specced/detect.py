@@ -33,6 +33,22 @@ TRACK_DIRS = (
     "mobile",
 )
 
+# Dirs counted as a track even without their own manifest (real monorepo containers).
+# Others (app/, src/, lib/, web/, api/) only count as a track if they hold a manifest —
+# this keeps a Next.js `app/` router dir from being mistaken for a monorepo track.
+STRONG_TRACKS = (
+    "backend",
+    "frontend",
+    "ml",
+    "services",
+    "packages",
+    "apps",
+    "server",
+    "client",
+    "mobile",
+    "infra",
+)
+
 DB_IMAGES = (
     "postgres",
     "mysql",
@@ -50,6 +66,21 @@ def _read(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except OSError:
         return ""
+
+
+def _has_manifest(directory: Path) -> bool:
+    return any(
+        (directory / m).exists()
+        for m in (
+            "package.json",
+            "pyproject.toml",
+            "go.mod",
+            "Cargo.toml",
+            "pom.xml",
+            "build.gradle",
+            "Gemfile",
+        )
+    )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -128,7 +159,18 @@ def detect(repo_root: Path) -> dict[str, Any]:
     if (root / ".golangci.yml").exists() or (root / ".golangci.yaml").exists():
         tools.add("golangci-lint")
 
-    tracks = [name for name in TRACK_DIRS if (root / name).is_dir()]
+    # Tauri desktop app: a web frontend plus a Rust backend in src-tauri/.
+    if (root / "src-tauri" / "Cargo.toml").exists():
+        languages.add("rust")
+        frameworks.add("tauri")
+
+    tracks = [
+        name
+        for name in TRACK_DIRS
+        if (root / name).is_dir() and (name in STRONG_TRACKS or _has_manifest(root / name))
+    ]
+    if (root / "src-tauri" / "Cargo.toml").exists():
+        tracks.append("src-tauri")
 
     # data / infra
     infra: dict[str, Any] = {

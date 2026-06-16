@@ -6,7 +6,7 @@
 # project's real commands. Keep each target fast and deterministic.
 
 .DEFAULT_GOAL := help
-.PHONY: help fmt lint test build verify
+.PHONY: help fmt lint test build verify verify-full
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -23,5 +23,8 @@ test: ## Run the test suite
 build: ## Build the project
 	{{BUILD_CMD}}
 
-verify: fmt lint test build ## Run the full acceptance gate (used by the verifier)
+verify: fmt lint test ## Fast acceptance gate (everyday changes; used by the verifier)
 	@echo "verify: OK"
+
+verify-full: verify build ## Full gate incl. build (features / release)
+	@echo "verify-full: OK"

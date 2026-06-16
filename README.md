@@ -85,9 +85,9 @@ specced status                    Show installed components, presets, mcp catalo
 specced version                   Print specced + engine versions.
 ```
 
-**12 presets** (`go`, `rust`, `python-fastapi`, `python-django`, `python`,
+**13 presets** (`go`, `rust`, `python-fastapi`, `python-django`, `python`,
 `node-next`, `node-svelte`, `node-react`, `node-express`, `node`, `java-spring`,
-`ruby-rails` — see [docs/presets.md](docs/presets.md)) and a **17-skill library**
+`ruby-rails`, `tauri` — see [docs/presets.md](docs/presets.md)) and a **17-skill library**
 (code-review, api-endpoint, db-migration, add-integration, background-worker,
 regen-client, write-tests, debug-issue, refactor, dependency-upgrade,
 perf-investigation, security-review, release, prepare-pr, new-domain-skill,
@@ -116,7 +116,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/architecture.md](docs/architect
 
 ## Status
 
-v0.1 — interview-first, with stack detection, 12 presets, a 7-server MCP catalog, a
+v0.1 — interview-first, with stack detection, 13 presets, a 7-server MCP catalog, a
 17-skill library, an agent-experience layer, and GitHub repo-as-code (Terraform under
 `infra/terraform/github/`). Roadmap: a `specced update` that diffs managed content
 across versions, more presets/skills, and PyPI publication.

@@ -14,7 +14,10 @@
 
 These hold on every change. A violation is always a blocking (Critical) issue.
 
-> TODO(specced): List the hard invariants. Examples to adapt or delete:
+> TODO(specced): List the hard invariants. For each, mark whether it is **enforced today**
+> (already true of the codebase — always Critical) or a **direction** (a target for
+> new/changed code — don't retroactively fail existing code). Verify against the actual
+> code, don't assume. Examples to adapt or delete:
 > - Authorization is fail-closed: never return data a caller is not permitted to see.
 > - Module/boundary rule: `<X>` may depend on `<Y>` but never the reverse.
 > - No secrets, tokens, or customer data in source, logs, or fixtures.

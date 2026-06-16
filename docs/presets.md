@@ -19,6 +19,7 @@ List them: `specced presets`. Current set:
 | `node` | generic Node / TypeScript |
 | `java-spring` | Spring Boot service (Maven wrapper) |
 | `ruby-rails` | Ruby on Rails app |
+| `tauri` | Tauri desktop app — web frontend + Rust backend in `src-tauri/` |
 
 `specced detect` suggests a preset from the repo's signals; `--preset auto` applies it.
 Java without Spring and Ruby without Rails resolve to "no preset" — the interview asks
@@ -27,7 +28,9 @@ instead of guessing.
 ## What a preset controls
 
 - **`make`** → the `fmt` / `lint` / `test` / `build` recipes in the generated `Makefile`
-  (the proof loop's acceptance-criteria vocabulary).
+  (the proof loop's acceptance-criteria vocabulary). The template wires a **two-level gate**:
+  `make verify` (fmt+lint+test, everyday) and `make verify-full` (adds `build`, for
+  features/release) — both recorded in `.specced/checks.json` (`all` / `all_full`).
 - **`tracks`** → recorded in `.specced/config.json`.
 - **`mcp_servers`** → composed into `.mcp.json` from the catalog.
 - **`rules`** → per-track stub files created under `.claude/rules/`.

@@ -69,8 +69,8 @@ def test_compose_mcp_records_config(repo: Path) -> None:
 
 def test_presets_have_core_anchors() -> None:
     names = {p["name"] for p in scaffold.list_presets()}
-    assert {"go", "python-fastapi", "node-next"}.issubset(names)  # anchors
-    assert len(names) >= 12
+    assert {"go", "python-fastapi", "node-next", "tauri"}.issubset(names)  # anchors
+    assert len(names) >= 13
 
 
 def test_every_detectable_preset_is_reachable() -> None:
@@ -105,3 +105,21 @@ def test_every_preset_has_required_fields() -> None:
 def test_mcp_catalog_valid() -> None:
     catalog = scaffold.mcp_catalog()
     assert "postgres" in catalog and "github" in catalog and "context7" in catalog
+
+
+def test_two_level_verify_gate(repo: Path) -> None:
+    scaffold.init_repo(repo, preset="python-fastapi")
+    makefile = (repo / "Makefile").read_text(encoding="utf-8")
+    assert "verify:" in makefile and "verify-full:" in makefile
+    checks = json.loads((repo / ".specced/checks.json").read_text(encoding="utf-8"))
+    assert checks["all"] == "make verify"
+    assert checks["all_full"] == "make verify-full"
+
+
+def test_tauri_preset_two_tracks(repo: Path) -> None:
+    scaffold.init_repo(repo, preset="tauri")
+    assert (repo / ".claude/rules/frontend/components.md").exists()
+    assert (repo / ".claude/rules/src-tauri/tauri-ipc.md").exists()
+    assert (repo / ".claude/code-review/04-sqlx-and-migrations.md").exists()
+    cfg = scaffold.read_config(repo)
+    assert cfg["tracks"] == ["frontend", "src-tauri"]

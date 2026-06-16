@@ -23,7 +23,7 @@ from typing import Any
 from . import detect as _detect
 from ._paths import templates_dir
 
-SPECCED_VERSION = "0.1.0"
+SPECCED_VERSION = "0.1.1"
 
 # Managed-block markers — kept identical to the vendored engine so a repo that
 # already used the engine directly keeps a single managed block, not two.
@@ -431,9 +431,10 @@ def _write_checks(
     make = (preset_data or {}).get("make", {})
     payload = {
         "all": "make verify",
+        "all_full": "make verify-full",
         "gates": {name: f"make {name}" for name in ("fmt", "lint", "test", "build")},
         "raw_commands": {k: make[k] for k in ("fmt", "lint", "test", "build") if make.get(k)},
-        "note": "Run `all` for the full gate. Gates map to Makefile targets; the verifier reruns them.",
+        "note": "make verify = fast gate (fmt+lint+test); make verify-full adds build. Gates map to Makefile targets.",
     }
     _write_file(
         repo_root / ".specced" / "checks.json", json.dumps(payload, indent=2) + "\n", force, actions
@@ -539,6 +540,19 @@ def _content_warnings(repo_root: Path) -> list[str]:
         if stubs:
             shown = ", ".join(stubs[:5]) + (" …" if len(stubs) > 5 else "")
             warnings.append(f"{len(stubs)} rule stub(s) still unfilled: {shown}")
+    try:
+        ignored = subprocess.run(
+            ["git", "-C", str(repo_root), "check-ignore", "-q", ".claude/agents"],
+            capture_output=True,
+        )
+        if ignored.returncode == 0:
+            warnings.append(
+                ".claude/ is git-ignored — specced's agents/rules/engine won't be "
+                "version-controlled or shared. Un-ignore .claude/{rules,agents,skills,commands} "
+                "(keep .claude/settings.local.json ignored)."
+            )
+    except Exception:
+        pass
     return warnings
 
 

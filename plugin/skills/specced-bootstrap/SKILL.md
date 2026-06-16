@@ -50,8 +50,10 @@ default as the recommended option. Cover:
 2. **Verification vocabulary** *(most important)* — confirm the real command for
    format, lint/type-check, test, build, and e2e. These become the `Makefile` targets
    and the proof loop's acceptance-criteria vocabulary, and the Stop-hook (`make fmt lint`).
-3. **Non-negotiables** — the invariant that must never break; boundary rules; numeric
-   budgets; security/supply-chain; backward-compat policy; commit attribution. → constitution.
+3. **Non-negotiables** — the invariant(s) that must never break; boundary rules; numeric
+   budgets; security/supply-chain; backward-compat; commit attribution. For EACH, decide
+   whether it's **enforced today** (true of the code now) or a **direction** (target for
+   new code) — read the code to check, don't assume. → constitution.
 4. **Per-track conventions** — the few rules that matter most per track. → rules.
 5. **Always-critical review classes** — what a reviewer must never wave through. → code-review.
 6. **MCP servers** — confirm the suggested set (`specced status` lists the catalog). → `.mcp.json`.
@@ -80,8 +82,10 @@ Run from the repo root:
 
 Replace skeletons with real, enforceable content informed by Steps 1–2:
 
-- **`CONSTITUTION.md`** — resolve every `TODO(specced)`; state real invariants,
-  budgets, policies; cut what doesn't apply.
+- **`CONSTITUTION.md`** — resolve every `TODO(specced)`; state real invariants, budgets,
+  policies; cut what doesn't apply. Mark each invariant **enforced-today** (Critical) vs
+  **direction** (new code only), checked against the actual code, so the gate doesn't flag
+  healthy existing code.
 - **`.claude/rules/<track>/*.md`** — fill each stub: one-line, imperative, checkable
   rules with good/bad examples from the actual code, and how a reviewer verifies each.
 - **`.claude/code-review/NN-*.md`** — fill each dimension; cite a constitution clause

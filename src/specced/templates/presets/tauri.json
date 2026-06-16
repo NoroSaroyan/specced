@@ -1,0 +1,29 @@
+{
+  "name": "tauri",
+  "description": "Tauri desktop app: web frontend (Next/React/etc.) + Rust backend in src-tauri/.",
+  "language": "node",
+  "detect": { "any_frameworks": ["tauri"], "priority": 95 },
+  "make": {
+    "fmt": "cd src-tauri && cargo fmt",
+    "lint": "npm run lint && npx tsc --noEmit && cd src-tauri && cargo clippy --all-targets --all-features -- -D warnings",
+    "test": "cd src-tauri && cargo test",
+    "build": "npx tauri build"
+  },
+  "tracks": ["frontend", "src-tauri"],
+  "mcp_servers": ["github", "context7"],
+  "rules": [
+    "frontend/components.md",
+    "frontend/data-fetching.md",
+    "frontend/routing.md",
+    "src-tauri/conventions.md",
+    "src-tauri/tauri-ipc.md",
+    "src-tauri/sqlx-and-migrations.md"
+  ],
+  "code_review": [
+    "01-components.md",
+    "02-data-fetching.md",
+    "03-rust-and-ipc.md",
+    "04-sqlx-and-migrations.md",
+    "05-tests.md"
+  ]
+}

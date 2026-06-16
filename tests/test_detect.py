@@ -131,6 +131,33 @@ def test_detect_ruby_rails(tmp_path: Path) -> None:
     assert d["suggested_preset"] == "ruby-rails"
 
 
+def test_detect_tauri(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "package.json": '{"dependencies":{"next":"16","@tauri-apps/api":"2"}}',
+            "src-tauri/Cargo.toml": '[package]\nname = "app"\n',
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert "rust" in d["languages"]
+    assert "tauri" in d["frameworks"]
+    assert d["suggested_preset"] == "tauri"
+    assert "src-tauri" in d["tracks"]
+
+
+def test_detect_next_app_dir_is_not_a_track(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "package.json": '{"dependencies":{"next":"16"}}',
+            "app/page.tsx": "export default function P() {}\n",
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert "app" not in d["tracks"]  # Next.js router dir, not a monorepo track
+
+
 def test_detect_empty_repo(tmp_path: Path) -> None:
     d = detect.detect(tmp_path)
     assert d["suggested_preset"] is None
