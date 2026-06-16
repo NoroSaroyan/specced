@@ -83,6 +83,22 @@ def _has_manifest(directory: Path) -> bool:
     )
 
 
+COMPOSE_NAMES = ("docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml")
+
+
+def _compose_files(root: Path) -> list[Path]:
+    """docker-compose files at the root and in common infra dirs (deploy/, infra/, …),
+    including one level down (e.g. deploy/docker-compose/docker-compose.yml)."""
+    found: list[Path] = [root / n for n in COMPOSE_NAMES if (root / n).exists()]
+    for d in ("deploy", "infra", "docker", "ops", ".docker"):
+        base = root / d
+        if base.is_dir():
+            for n in COMPOSE_NAMES:
+                found.extend(base.glob(n))
+                found.extend(base.glob(f"*/{n}"))
+    return found
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -179,8 +195,8 @@ def detect(repo_root: Path) -> dict[str, Any]:
         "migrations": None,
         "docker_compose": False,
     }
-    for compose in ("docker-compose.yml", "docker-compose.yaml", "compose.yml"):
-        text = _read(root / compose)
+    for compose in _compose_files(root):
+        text = _read(compose)
         if text:
             infra["docker_compose"] = True
             for img in DB_IMAGES:

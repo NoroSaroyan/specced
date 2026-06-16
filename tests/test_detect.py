@@ -158,6 +158,23 @@ def test_detect_next_app_dir_is_not_a_track(tmp_path: Path) -> None:
     assert "app" not in d["tracks"]  # Next.js router dir, not a monorepo track
 
 
+def test_detect_compose_in_deploy_subdir(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "go.mod": "module example.com/x\n",
+            "deploy/docker-compose/docker-compose.yml": (
+                "services:\n  db: { image: postgres:16 }\n  vec: { image: qdrant/qdrant:v1.11.0 }\n"
+            ),
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert "postgres" in d["infra"]["databases"]
+    assert "qdrant" in d["infra"]["databases"]
+    assert "postgres" in d["suggested_mcp"]
+    assert "qdrant" in d["suggested_mcp"]
+
+
 def test_detect_empty_repo(tmp_path: Path) -> None:
     d = detect.detect(tmp_path)
     assert d["suggested_preset"] is None

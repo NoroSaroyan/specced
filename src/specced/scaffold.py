@@ -23,7 +23,7 @@ from typing import Any
 from . import detect as _detect
 from ._paths import templates_dir
 
-SPECCED_VERSION = "0.1.1"
+SPECCED_VERSION = "0.1.2"
 
 # Managed-block markers — kept identical to the vendored engine so a repo that
 # already used the engine directly keeps a single managed block, not two.
