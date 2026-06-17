@@ -94,6 +94,48 @@ def test_detect_rust(tmp_path: Path) -> None:
     assert d["suggested_preset"] == "rust"
 
 
+def test_detect_cpp_cmake(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "CMakeLists.txt": "cmake_minimum_required(VERSION 3.20)\nproject(x)\n",
+            "src/main.cpp": "int main() { return 0; }\n",
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert "cpp" in d["languages"]
+    assert "cmake" in d["frameworks"]
+    assert d["suggested_preset"] == "cpp"
+    assert "ctest" in (d["suggested_verification"]["test"] or "")
+
+
+def test_detect_cpp_sources_only(tmp_path: Path) -> None:
+    _mk(tmp_path, {"src/widget.hpp": "#pragma once\n"})
+    d = detect.detect(tmp_path)
+    assert "cpp" in d["languages"]
+    assert d["suggested_preset"] == "cpp"
+
+
+def test_detect_cpp_defers_to_higher_level_language(tmp_path: Path) -> None:
+    # A Python project with a native C++ extension keeps its own (python) verify loop.
+    _mk(
+        tmp_path,
+        {
+            "pyproject.toml": '[project]\ndependencies=["fastapi"]\n',
+            "CMakeLists.txt": "project(ext)\n",
+            "src/_ext.cpp": "// pybind11 module\n",
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert {"cpp", "python"}.issubset(set(d["languages"]))
+    assert d["suggested_preset"] == "python-fastapi"  # cpp priority (35) ranks below
+
+
+def test_detect_bare_makefile_is_not_cpp(tmp_path: Path) -> None:
+    _mk(tmp_path, {"Makefile": "all:\n\t@echo hi\n", "pyproject.toml": "[project]\n"})
+    assert "cpp" not in detect.detect(tmp_path)["languages"]
+
+
 def test_detect_node_react_vite(tmp_path: Path) -> None:
     _mk(
         tmp_path, {"package.json": '{"dependencies":{"react":"19"},"devDependencies":{"vite":"5"}}'}

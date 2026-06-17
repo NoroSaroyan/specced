@@ -14,6 +14,7 @@ _SETUP_MARKER = {
     "rust": "rust-toolchain",
     "java": "setup-java",
     "ruby": "setup-ruby",
+    "cpp": "clang-tidy",
 }
 
 

@@ -583,6 +583,10 @@ _CI_SETUP: dict[str, list[str]] = {
     "rust": [
         "      - uses: dtolnay/rust-toolchain@stable",
     ],
+    "cpp": [
+        "      - name: Install C++ toolchain",
+        "        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang clang-format clang-tidy",
+    ],
     "java": [
         "      - uses: actions/setup-java@v4",
         "        with:",
