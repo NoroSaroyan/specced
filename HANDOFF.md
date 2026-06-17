@@ -1,6 +1,6 @@
 # specced — handoff
 
-State of the project as of **v0.1.3** (2026-06-17), written so a fresh session can pick
+State of the project as of **v0.1.4** (2026-06-17), written so a fresh session can pick
 up cold and reason about what to build next.
 
 ## What specced is
@@ -20,7 +20,7 @@ Three layers it installs: (1) the vendored **proof-loop engine** (OpenAI, Apache
 
 ## Shipped / live
 
-- **PyPI:** `specced 0.1.3` — `uv tool install specced` / `pip install specced`.
+- **PyPI:** `specced 0.1.4` — `uv tool install specced` / `pip install specced`.
 - **GitHub:** https://github.com/NoroSaroyan/specced (public; CI green; branch protection).
 - **Plugin marketplace:** `/plugin marketplace add NoroSaroyan/specced`.
 - **Repo-as-code:** `infra/terraform/github/` manages the repo + settings (Terraform state
@@ -80,6 +80,15 @@ Dev loop: `make install` then `make verify` (ruff + pytest + build = the CI gate
 
 Conclusion: **mechanics for free + interview authors the domain layer ≈ an expert hand-built
 setup.** The thesis holds against the gold standard.
+
+## Shipped in v0.1.4
+
+- **`cpp` preset** — C++ projects (CMake + clang-format + clang-tidy + ctest). As a new
+  *language* (not just a framework), detection recognizes C++ from a CMake/Meson build
+  file, a vcpkg/conan manifest, or C++ sources — never a bare Makefile — with a matching
+  `suggest_verification` branch and a CI toolchain-setup block. It detects at a low
+  priority (35), so a Python/Node repo with a native C++ extension keeps its own verify
+  loop while a standalone C++ repo resolves to `cpp`.
 
 ## Shipped in v0.1.3
 
