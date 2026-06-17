@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "specced"
-version = "0.1.2"
+version = "0.1.3"
 description = "Interview-driven bootstrap for a reusable agentic coding setup: proof-loop engine + project rules + skills, installed into any repo."
 readme = "README.md"
 requires-python = ">=3.10"
