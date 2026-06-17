@@ -87,7 +87,7 @@ specced status                    Show installed components, presets, mcp catalo
 specced version                   Print specced + engine versions.
 ```
 
-**13 presets** (`go`, `rust`, `python-fastapi`, `python-django`, `python`,
+**14 presets** (`go`, `rust`, `cpp`, `python-fastapi`, `python-django`, `python`,
 `node-next`, `node-svelte`, `node-react`, `node-express`, `node`, `java-spring`,
 `ruby-rails`, `tauri` — see [docs/presets.md](docs/presets.md)) and a **17-skill library**
 (code-review, api-endpoint, db-migration, add-integration, background-worker,

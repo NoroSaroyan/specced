@@ -19,11 +19,14 @@ List them: `specced presets`. Current set:
 | `node` | generic Node / TypeScript |
 | `java-spring` | Spring Boot service (Maven wrapper) |
 | `ruby-rails` | Ruby on Rails app |
+| `cpp` | C++ project — CMake + clang-format + clang-tidy + ctest |
 | `tauri` | Tauri desktop app — web frontend + Rust backend in `src-tauri/` |
 
 `specced detect` suggests a preset from the repo's signals; `--preset auto` applies it.
 Java without Spring and Ruby without Rails resolve to "no preset" — the interview asks
-instead of guessing.
+instead of guessing. C++ is detected from a CMake/Meson build file, a vcpkg/conan
+manifest, or C++ sources (never a bare Makefile); it ranks below the other languages, so
+a Python/Node repo with a native C++ extension keeps its own verify loop.
 
 ## What a preset controls
 

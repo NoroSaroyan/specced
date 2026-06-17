@@ -1,0 +1,16 @@
+{
+  "name": "cpp",
+  "description": "C++ project (CMake; clang-format + clang-tidy + ctest).",
+  "language": "cpp",
+  "detect": { "any_frameworks": [], "priority": 35 },
+  "make": {
+    "fmt": "find . \\( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.h' -o -name '*.hpp' -o -name '*.hh' \\) -not -path './build/*' -exec clang-format -i {} +",
+    "lint": "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > /dev/null && find . \\( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \\) -not -path './build/*' -exec clang-tidy -p build {} +",
+    "test": "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > /dev/null && cmake --build build && ctest --test-dir build --output-on-failure",
+    "build": "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build"
+  },
+  "tracks": ["src"],
+  "mcp_servers": ["github", "context7"],
+  "rules": ["cpp/conventions.md", "cpp/memory-and-resources.md", "cpp/error-handling.md", "cpp/testing.md"],
+  "code_review": ["01-correctness.md", "02-memory-safety.md", "03-resource-management.md", "04-tests.md"]
+}

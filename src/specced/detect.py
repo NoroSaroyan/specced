@@ -78,6 +78,14 @@ DEP_MCP_SIGNALS = {
     "supabase": "supabase",
 }
 
+# C / C++ has no single manifest, so detection keys off build-system files, the common
+# package managers, and C++-specific source extensions. A bare Makefile is deliberately
+# NOT a signal (too ambiguous — this very repo ships one for a Python project).
+CPP_BUILD_MARKERS = {"CMakeLists.txt": "cmake", "meson.build": "meson"}
+CPP_PACKAGE_MARKERS = ("vcpkg.json", "conanfile.txt", "conanfile.py")
+CPP_SOURCE_EXTS = (".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx")
+CPP_SOURCE_DIRS = ("src", "source", "include", "lib", "libs", "app", "apps")
+
 
 def _read(path: Path) -> str:
     try:
@@ -132,6 +140,32 @@ def _manifest_dirs(root: Path) -> list[Path]:
         if d.is_dir():
             dirs.append(d)
     return dirs
+
+
+def _has_cpp_sources(root: Path) -> bool:
+    """A C++-specific source/header at the root or in a common source dir. Bounded and
+    short-circuiting: the first match wins, so only a non-C++ repo pays a full walk — and
+    its source dirs are typically small or absent."""
+    for f in root.iterdir():
+        if f.is_file() and f.suffix in CPP_SOURCE_EXTS:
+            return True
+    for name in CPP_SOURCE_DIRS:
+        d = root / name
+        if d.is_dir():
+            for f in d.rglob("*"):
+                if f.suffix in CPP_SOURCE_EXTS:
+                    return True
+    return False
+
+
+def _detect_cpp(root: Path) -> set[str] | None:
+    """Build frameworks (possibly empty) if this looks like a C/C++ project, else None.
+    Signals: a CMake/Meson build file, a vcpkg/conan manifest, or a C++ source file."""
+    frameworks = {fw for marker, fw in CPP_BUILD_MARKERS.items() if (root / marker).exists()}
+    has_pkg = any((root / m).exists() for m in CPP_PACKAGE_MARKERS)
+    if frameworks or has_pkg or _has_cpp_sources(root):
+        return frameworks
+    return None
 
 
 def detect(repo_root: Path) -> dict[str, Any]:
@@ -236,6 +270,14 @@ def detect(repo_root: Path) -> dict[str, Any]:
     if (root / "src-tauri" / "Cargo.toml").exists():
         languages.add("rust")
         frameworks.add("tauri")
+
+    # C / C++: ranks below the other languages (see cpp.json priority) so a Python/Node
+    # repo with a native extension keeps its own verify loop; a standalone C++ repo still
+    # resolves to the cpp preset.
+    cpp_frameworks = _detect_cpp(root)
+    if cpp_frameworks is not None:
+        languages.add("cpp")
+        frameworks.update(cpp_frameworks)
 
     tracks = [
         name
@@ -363,6 +405,23 @@ def suggest_verification(d: dict[str, Any]) -> dict[str, str | None]:
     tools = set(d["tools"])
     scripts = d["node_scripts"]
     out: dict[str, str | None] = {"fmt": None, "lint": None, "test": None, "build": None}
+    if "cpp" in langs:
+        out["fmt"] = (
+            "find . \\( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' -o -name '*.h' "
+            "-o -name '*.hpp' -o -name '*.hh' \\) -not -path './build/*' -exec clang-format -i {} +"
+        )
+        out["lint"] = (
+            "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > /dev/null && "
+            "find . \\( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \\) -not -path './build/*' "
+            "-exec clang-tidy -p build {} +"
+        )
+        out["test"] = (
+            "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > /dev/null && "
+            "cmake --build build && ctest --test-dir build --output-on-failure"
+        )
+        out["build"] = (
+            "cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build build"
+        )
     if "python" in langs:
         out["fmt"] = "ruff format ." if "ruff" in tools else "black ."
         out["lint"] = "ruff check ." + (" && mypy ." if "mypy" in tools else "")
