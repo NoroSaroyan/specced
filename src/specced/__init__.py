@@ -8,4 +8,4 @@ The *intelligent* half — the interview that fills in project-specific content 
 lives in the Claude Code plugin under ``plugin/`` and drives this CLI.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"

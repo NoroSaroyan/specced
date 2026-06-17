@@ -1,6 +1,6 @@
 # specced — handoff
 
-State of the project as of **v0.1.2** (2026-06-17), written so a fresh session can pick
+State of the project as of **v0.1.3** (2026-06-17), written so a fresh session can pick
 up cold and reason about what to build next.
 
 ## What specced is
@@ -20,7 +20,7 @@ Three layers it installs: (1) the vendored **proof-loop engine** (OpenAI, Apache
 
 ## Shipped / live
 
-- **PyPI:** `specced 0.1.2` — `uv tool install specced` / `pip install specced`.
+- **PyPI:** `specced 0.1.3` — `uv tool install specced` / `pip install specced`.
 - **GitHub:** https://github.com/NoroSaroyan/specced (public; CI green; branch protection).
 - **Plugin marketplace:** `/plugin marketplace add NoroSaroyan/specced`.
 - **Repo-as-code:** `infra/terraform/github/` manages the repo + settings (Terraform state
@@ -81,7 +81,7 @@ Dev loop: `make install` then `make verify` (ruff + pytest + build = the CI gate
 Conclusion: **mechanics for free + interview authors the domain layer ≈ an expert hand-built
 setup.** The thesis holds against the gold standard.
 
-## Landed since v0.1.2 (unreleased, in `main`)
+## Shipped in v0.1.3
 
 The **day-2 lifecycle** thread — get a setup *in* → *enforce* it → *evolve* it. Full
 design + decisions in `docs/proposals/ci-gate-and-signal.md`.
