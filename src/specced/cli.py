@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import scaffold
+from . import scaffold, stats
 
 
 def _repo_root(args: argparse.Namespace) -> Path:
@@ -33,6 +33,11 @@ def cmd_init(args: argparse.Namespace) -> int:
             preset=args.preset,
         )
     )
+    return 0
+
+
+def cmd_adopt(args: argparse.Namespace) -> int:
+    _emit(scaffold.adopt(_repo_root(args), apply=args.apply))
     return 0
 
 
@@ -63,6 +68,12 @@ def cmd_list_skills(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ci(args: argparse.Namespace) -> int:
+    result = scaffold.emit_ci(_repo_root(args), force=args.force, pre_commit=args.pre_commit)
+    _emit(result)
+    return 0 if result.get("ok") else 1
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     _emit(scaffold.sync(_repo_root(args)))
     return 0
@@ -76,6 +87,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     _emit(scaffold.status(_repo_root(args)))
+    return 0
+
+
+def cmd_stats(args: argparse.Namespace) -> int:
+    _emit(stats.compute(_repo_root(args)))
     return 0
 
 
@@ -121,6 +137,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_init.set_defaults(func=cmd_init)
 
+    p_adopt = sub.add_parser(
+        "adopt",
+        parents=[common],
+        help="Absorb an existing hand-built setup into specced management "
+        "(plan by default; --apply to run the mechanical steps).",
+    )
+    p_adopt.add_argument(
+        "--apply",
+        action="store_true",
+        help="Execute the mechanical steps (default is a non-destructive dry-run plan).",
+    )
+    p_adopt.set_defaults(func=cmd_adopt)
+
     p_detect = sub.add_parser(
         "detect", parents=[common], help="Inspect the repo and report stack signals (JSON)."
     )
@@ -148,6 +177,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_list = sub.add_parser("list-skills", help="List available library skills.")
     p_list.set_defaults(func=cmd_list_skills)
 
+    p_ci = sub.add_parser(
+        "ci",
+        parents=[common],
+        help="Emit a GitHub Actions workflow that runs the verify gate (external teeth).",
+    )
+    p_ci.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite an existing gate, and emit even if verify targets are placeholders.",
+    )
+    p_ci.add_argument(
+        "--pre-commit",
+        action="store_true",
+        help="Also write a .pre-commit-config.yaml fast hook (make fmt lint).",
+    )
+    p_ci.set_defaults(func=cmd_ci)
+
     p_sync = sub.add_parser(
         "sync",
         parents=[common],
@@ -162,6 +208,14 @@ def build_parser() -> argparse.ArgumentParser:
         "status", parents=[common], help="Show installed components and config."
     )
     p_status.set_defaults(func=cmd_status)
+
+    p_stats = sub.add_parser(
+        "stats",
+        parents=[common],
+        help="Mine the signal (proof-loop verdicts, review/rule trailers, CI runs) for "
+        "rule/dimension usage and gate health.",
+    )
+    p_stats.set_defaults(func=cmd_stats)
 
     p_version = sub.add_parser("version", help="Print specced and engine versions.")
     p_version.set_defaults(func=cmd_version)

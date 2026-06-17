@@ -179,3 +179,47 @@ def test_detect_empty_repo(tmp_path: Path) -> None:
     d = detect.detect(tmp_path)
     assert d["suggested_preset"] is None
     assert d["suggested_mcp"] == ["context7"]
+    assert d["dep_signals"] == []
+
+
+def test_detect_python_dep_signals_suggest_mcp(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "pyproject.toml": '[project]\ndependencies=["fastapi","psycopg","sentry-sdk","qdrant-client"]\n'
+        },
+    )
+    d = detect.detect(tmp_path)
+    assert {"psycopg", "sentry", "qdrant"}.issubset(set(d["dep_signals"]))
+    mcp = d["suggested_mcp"]
+    assert "postgres" in mcp  # psycopg
+    assert "sentry" in mcp
+    assert "qdrant" in mcp
+
+
+def test_detect_node_dep_signals_suggest_mcp(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "package.json": '{"dependencies":{"next":"15","@sentry/nextjs":"8","pg":"8"},'
+            '"devDependencies":{"@playwright/test":"1"}}'
+        },
+    )
+    mcp = detect.detect(tmp_path)["suggested_mcp"]
+    assert "sentry" in mcp
+    assert "playwright" in mcp
+    assert "postgres" in mcp  # from "pg"
+
+
+def test_detect_go_dep_signals_suggest_mcp(tmp_path: Path) -> None:
+    _mk(
+        tmp_path,
+        {
+            "go.mod": "module example.com/x\n\nrequire (\n"
+            "\tgithub.com/jackc/pgx/v5 v5.6.0\n"
+            "\tgithub.com/getsentry/sentry-go v0.28.0\n)\n"
+        },
+    )
+    mcp = detect.detect(tmp_path)["suggested_mcp"]
+    assert "postgres" in mcp  # pgx
+    assert "sentry" in mcp

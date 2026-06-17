@@ -1,0 +1,28 @@
+# Managed by `specced ci` — re-run `specced ci --force` to refresh.
+#
+# Runs the SAME gate the proof loop uses, so a green PR means the same thing
+# locally and in CI: `make verify` (fmt + lint + test) on pull requests,
+# `make verify-full` (adds build) on the default branch.
+#
+# The toolchain setup below is a sensible default for this repo's primary
+# language. Adjust it to match how this repo installs dependencies (and, for a
+# multi-stack repo, add the second toolchain — specced installs one per repo).
+name: specced-gate
+
+on:
+  pull_request:
+  push:
+    branches: [{{DEFAULT_BRANCH}}]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+{{SETUP_STEPS}}
+      - name: Fast gate (fmt + lint + test)
+        if: github.event_name == 'pull_request'
+        run: make verify
+      - name: Full gate (incl. build)
+        if: github.event_name == 'push'
+        run: make verify-full

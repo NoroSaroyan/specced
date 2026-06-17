@@ -60,6 +60,24 @@ DB_IMAGES = (
     "clickhouse",
 )
 
+# Dependency fingerprint -> MCP server. Lets detection infer servers from real deps,
+# not just docker-compose images. Advisory only: surfaced by `detect`/`doctor`, never
+# auto-installed. The collectors below normalize ecosystem-specific names to these keys.
+DEP_MCP_SIGNALS = {
+    "psycopg": "postgres",
+    "psycopg2": "postgres",
+    "asyncpg": "postgres",
+    "sqlalchemy": "postgres",
+    "pgx": "postgres",
+    "lib/pq": "postgres",
+    "pg": "postgres",
+    "prisma": "postgres",
+    "qdrant": "qdrant",
+    "sentry": "sentry",
+    "playwright": "playwright",
+    "supabase": "supabase",
+}
+
 
 def _read(path: Path) -> str:
     try:
@@ -122,6 +140,7 @@ def detect(repo_root: Path) -> dict[str, Any]:
     frameworks: set[str] = set()
     tools: set[str] = set()
     node_scripts: dict[str, str] = {}
+    dep_signals: set[str] = set()
 
     for d in _manifest_dirs(root):
         pyproject = _read(d / "pyproject.toml")
@@ -133,6 +152,20 @@ def detect(repo_root: Path) -> dict[str, Any]:
             for tool in ("ruff", "black", "mypy", "pytest", "tox", "nox"):
                 if re.search(rf"\b{tool}\b", pyproject, re.IGNORECASE):
                     tools.add(tool)
+            pytext = pyproject + "\n" + _read(d / "requirements.txt")
+            for token, sig in (
+                ("psycopg", "psycopg"),
+                ("asyncpg", "asyncpg"),
+                ("sqlalchemy", "sqlalchemy"),
+                ("sentry-sdk", "sentry"),
+                ("sentry_sdk", "sentry"),
+                ("qdrant-client", "qdrant"),
+                ("qdrant_client", "qdrant"),
+                ("supabase", "supabase"),
+                ("playwright", "playwright"),
+            ):
+                if re.search(re.escape(token), pytext, re.IGNORECASE):
+                    dep_signals.add(sig)
 
         pkg = _load_json(d / "package.json")
         if pkg:
@@ -156,9 +189,33 @@ def detect(repo_root: Path) -> dict[str, Any]:
             ):
                 if dep in alldeps:
                     frameworks.add(dep.split("/")[0].lstrip("@"))
+            for dep in alldeps:
+                low = dep.lower()
+                if low == "pg":
+                    dep_signals.add("pg")
+                if "prisma" in low:
+                    dep_signals.add("prisma")
+                if "sentry" in low:
+                    dep_signals.add("sentry")
+                if "playwright" in low:
+                    dep_signals.add("playwright")
+                if "supabase" in low:
+                    dep_signals.add("supabase")
+                if "qdrant" in low:
+                    dep_signals.add("qdrant")
 
         if (d / "go.mod").exists():
             languages.add("go")
+            gomod = _read(d / "go.mod").lower()
+            for token, sig in (
+                ("pgx", "pgx"),
+                ("lib/pq", "lib/pq"),
+                ("qdrant", "qdrant"),
+                ("sentry-go", "sentry"),
+                ("getsentry", "sentry"),
+            ):
+                if token in gomod:
+                    dep_signals.add(sig)
         if (d / "Cargo.toml").exists():
             languages.add("rust")
         jvm = _read(d / "pom.xml") + _read(d / "build.gradle") + _read(d / "build.gradle.kts")
@@ -227,6 +284,7 @@ def detect(repo_root: Path) -> dict[str, Any]:
         "frameworks": sorted(frameworks),
         "tools": sorted(tools),
         "node_scripts": node_scripts,
+        "dep_signals": sorted(dep_signals),
         "tracks": tracks,
         "infra": infra,
         "existing": existing,
@@ -290,6 +348,11 @@ def suggest_mcp(d: dict[str, Any]) -> list[str]:
         servers.append("postgres")
     if "qdrant" in infra["databases"]:
         servers.append("qdrant")
+    # deps-based signals: infer servers from real dependencies, not just compose images
+    for sig in d.get("dep_signals", []):
+        server = DEP_MCP_SIGNALS.get(sig)
+        if server:
+            servers.append(server)
     # de-dup, preserve order
     seen: set[str] = set()
     return [s for s in servers if not (s in seen or seen.add(s))]

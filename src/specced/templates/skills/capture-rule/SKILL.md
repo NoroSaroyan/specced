@@ -38,6 +38,12 @@ Pick the narrowest correct home:
    place rather than adding a near-duplicate.
 4. If it updates an empty stub, remove the `> TODO(specced):` marker (it's now real).
 5. Confirm back to the user in one line: what you captured and where.
+6. Emit a one-line machine-readable trailer so rule provenance is mineable by
+   `specced stats` (which rules get added, and from what):
+
+   ```
+   Specced-Rule: <created|sharpened> <home>   # e.g. Specced-Rule: created .claude/rules/go/errors.md
+   ```
 
 ## Guardrails
 

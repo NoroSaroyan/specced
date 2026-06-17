@@ -97,6 +97,7 @@ def test_library_lists_skills_excluding_engine() -> None:
     skills = scaffold.list_library_skills()
     assert "repo-task-proof-loop" not in skills  # engine is not a library skill
     assert {"code-review", "api-endpoint", "write-tests"}.issubset(set(skills))  # anchors
+    assert {"learn-from-review", "promote-constitution"}.issubset(set(skills))  # loop write-side
     assert len(skills) >= 16
 
 
@@ -177,3 +178,13 @@ def test_doctor_warns_when_claude_gitignored(repo: Path) -> None:
     scaffold.init_repo(repo, preset="python")
     warnings = scaffold.doctor(repo)["warnings"]
     assert any("git-ignored" in w for w in warnings)
+
+
+def test_doctor_suggests_unenabled_mcp(repo: Path) -> None:
+    # A dependency implies an MCP server the chosen preset didn't enable.
+    (repo / "pyproject.toml").write_text(
+        '[project]\ndependencies=["fastapi","sentry-sdk"]\n', encoding="utf-8"
+    )
+    scaffold.init_repo(repo, preset="python-fastapi")  # enables postgres/github/context7
+    suggestions = scaffold.doctor(repo)["suggestions"]
+    assert any("sentry" in s for s in suggestions)
