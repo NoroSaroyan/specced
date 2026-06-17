@@ -1,7 +1,7 @@
 {
   "name": "specced",
   "description": "Bootstrap the specced agentic coding setup into a repo: detects the stack, interviews you, and scaffolds the proof-loop engine, project rules, code-review dimensions, and skills.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": { "name": "Norik Saroyan", "email": "noriksaroyan@gmail.com" },
   "homepage": "https://github.com/NoroSaroyan/specced",
   "keywords": ["agentic", "proof-loop", "scaffold", "spec-driven", "bootstrap"]
