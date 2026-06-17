@@ -176,5 +176,5 @@ next. Other open items live in *Known gaps* below.
   serves a stale build. (Bumping the version sidesteps this.)
 - CI pins `actions/checkout@v6` + `astral-sh/setup-uv@v8.2.0` (setup-uv has no moving `v8`).
 - Release flow: bump `version` in `pyproject.toml` (+ `__init__.py` + `scaffold.py`
-  `SPECCED_VERSION`, `plugin/.claude-plugin/plugin.json`), `make verify`, commit, `gh release create vX.Y.Z` — `release.yml` has
-  a tag==version guard.
+  `SPECCED_VERSION`, `plugin/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`),
+  `make verify`, commit, `gh release create vX.Y.Z` — `release.yml` has a tag==version guard.

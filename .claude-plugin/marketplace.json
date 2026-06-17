@@ -3,7 +3,7 @@
   "owner": { "name": "Norik Saroyan", "email": "noriksaroyan@gmail.com" },
   "metadata": {
     "description": "Interview-driven bootstrap for a reusable agentic coding setup.",
-    "version": "0.1.0"
+    "version": "0.1.4"
   },
   "plugins": [
     {
