@@ -41,25 +41,26 @@ src/specced/
   templates/     # SINGLE source of truth (shipped in the wheel)
     skills/repo-task-proof-loop/  # vendored engine (do not edit; see NOTICE)
     skills/<name>/                # 19 library skills
-    presets/*.json                # 13 stack presets (data-driven `detect` block each)
+    presets/*.json                # 14 stack presets (data-driven `detect` block each)
     mcp/servers.json              # 7-server MCP catalog
     project/                      # CONSTITUTION / settings / mcp / Makefile templates
     rules/ , code-review/         # skeletons + _template.md
 plugin/          # marketplace.json + plugin.json + commands/ + specced-bootstrap skill
-tests/           # 47 pytest tests (property-based; grow without churn)
+tests/           # 69 pytest tests (property-based; grow without churn)
 docs/            # user + contributor docs
 infra/terraform/github/  # repo-as-code
 ```
 
 Dev loop: `make install` then `make verify` (ruff + pytest + build = the CI gate).
 
-## What's in the box (v0.1.2)
+## What's in the box
 
-- **13 presets:** go, rust, python-fastapi, python-django, python, node-next, node-svelte,
-  node-react, node-express, node, java-spring, ruby-rails, **tauri**.
-- **17 skills:** code-review, new-domain-skill, decision-record, capture-rule, api-endpoint,
+- **14 presets:** go, rust, **cpp**, python-fastapi, python-django, python, node-next,
+  node-svelte, node-react, node-express, node, java-spring, ruby-rails, **tauri**.
+- **19 skills:** code-review, new-domain-skill, decision-record, capture-rule, api-endpoint,
   db-migration, add-integration, background-worker, regen-client, write-tests, debug-issue,
-  refactor, dependency-upgrade, perf-investigation, security-review, release, prepare-pr.
+  refactor, dependency-upgrade, perf-investigation, security-review, release, prepare-pr,
+  learn-from-review, promote-constitution.
 - **MCP catalog:** context7, github, postgres, qdrant, supabase, playwright, sentry.
 - **Agent-experience layer** (written by `init`, not in `--minimal`): permission allowlist
   (`.claude/settings.local.json`), machine-readable `.specced/checks.json` (two-level
@@ -88,7 +89,11 @@ setup.** The thesis holds against the gold standard.
   file, a vcpkg/conan manifest, or C++ sources — never a bare Makefile — with a matching
   `suggest_verification` branch and a CI toolchain-setup block. It detects at a low
   priority (35), so a Python/Node repo with a native C++ extension keeps its own verify
-  loop while a standalone C++ repo resolves to `cpp`.
+  loop while a standalone C++ repo resolves to `cpp`. The `make` recipes are a CMake-centric
+  **starting point** — validated end-to-end on a synthetic CMake repo (`init` → `build` →
+  `ctest`), not yet dogfooded on a real-world C++ project.
+- **Housekeeping:** synced the plugin marketplace version (`.claude-plugin/marketplace.json`,
+  had drifted to `0.1.0`) to the release and added it to the release-flow checklist below.
 
 ## Shipped in v0.1.3
 
@@ -97,7 +102,7 @@ design + decisions in `docs/proposals/ci-gate-and-signal.md`.
 
 - **`specced ci`** — emits `.github/workflows/specced-gate.yml` running the same gate
   (`make verify` on PRs, `make verify-full` on the default branch). Toolchain setup is
-  keyed off the preset language (all 6). Refuses over `TODO(specced)` placeholder targets
+  keyed off the preset language (all preset languages). Refuses over `TODO(specced)` placeholder targets
   (the no-op-CI guard) unless `--force`; `--pre-commit` adds a fast hook. Non-clobber like
   init; `sync` deliberately leaves CI alone (re-run `specced ci --force`).
 - **Signal convention (the keystone for the loop):** `code-review` and `capture-rule`
