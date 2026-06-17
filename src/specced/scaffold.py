@@ -557,6 +557,394 @@ def _content_warnings(repo_root: Path) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# CI gate + MCP suggestions (day-2: make the gate external, surface missed servers)
+# --------------------------------------------------------------------------- #
+CI_GATE_REL = (".github", "workflows", "specced-gate.yml")
+
+# Primary-language -> GitHub Actions toolchain setup steps. Pins track this repo's
+# own CI convention (checkout@v6, setup-uv@v8.2.0). specced installs one preset per
+# repo; a multi-stack repo (e.g. tauri = node + rust) needs the second block by hand.
+_CI_SETUP: dict[str, list[str]] = {
+    "go": [
+        "      - uses: actions/setup-go@v5",
+        "        with:",
+        "          go-version: stable",
+    ],
+    "node": [
+        "      - uses: actions/setup-node@v4",
+        "        with:",
+        "          node-version: lts/*",
+        "      - run: npm ci",
+    ],
+    "python": [
+        "      - uses: astral-sh/setup-uv@v8.2.0",
+        "      - run: uv sync --all-extras --dev",
+    ],
+    "rust": [
+        "      - uses: dtolnay/rust-toolchain@stable",
+    ],
+    "java": [
+        "      - uses: actions/setup-java@v4",
+        "        with:",
+        "          distribution: temurin",
+        "          java-version: '21'",
+    ],
+    "ruby": [
+        "      - uses: ruby/setup-ruby@v1",
+        "        with:",
+        "          ruby-version: '3.3'",
+        "          bundler-cache: true",
+    ],
+}
+
+
+def _default_branch(repo_root: Path) -> str:
+    """Best-effort default branch for the ``push`` trigger (falls back to ``main``)."""
+    for cmd in (
+        ["git", "-C", str(repo_root), "symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
+        ["git", "-C", str(repo_root), "branch", "--show-current"],
+    ):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                return r.stdout.strip().rsplit("/", 1)[-1]
+        except Exception:
+            pass
+    return "main"
+
+
+def _ci_targets_are_placeholders(repo_root: Path) -> bool:
+    """True if the verify targets are still ``TODO(specced)`` stubs — a CI gate over
+    them passes without checking anything (a green no-op). The Makefile carries the
+    marker specced plants when no preset wired real commands."""
+    makefile = repo_root / "Makefile"
+    if not makefile.exists():
+        return True
+    return "TODO(specced)" in makefile.read_text(encoding="utf-8")
+
+
+def _resolve_language(repo_root: Path, cfg: dict[str, Any]) -> str | None:
+    preset_data = load_preset(cfg.get("preset"))
+    if preset_data and preset_data.get("language"):
+        return str(preset_data["language"])
+    langs = _detect.detect(repo_root).get("languages", [])
+    return langs[0] if langs else None
+
+
+def _write_pre_commit(repo_root: Path, actions: list[dict[str, str]], force: bool) -> None:
+    content = (
+        "# Managed by `specced ci --pre-commit`. Fast checks only — `make fmt lint`\n"
+        "# (tests run in the CI gate; too slow for a commit hook).\n"
+        "repos:\n"
+        "  - repo: local\n"
+        "    hooks:\n"
+        "      - id: specced-fast-gate\n"
+        "        name: specced fast gate (fmt + lint)\n"
+        "        entry: make fmt lint\n"
+        "        language: system\n"
+        "        pass_filenames: false\n"
+        "        always_run: true\n"
+    )
+    _write_file(repo_root / ".pre-commit-config.yaml", content, force, actions)
+
+
+def emit_ci(repo_root: Path, *, force: bool = False, pre_commit: bool = False) -> dict[str, Any]:
+    """Emit a GitHub Actions workflow that runs the verify gate (the same one the proof
+    loop uses), and optionally a fast pre-commit hook. The gate is specced-owned: it
+    lives in its own file and never edits the repo's other workflows."""
+    cfg = read_config(repo_root)
+    language = _resolve_language(repo_root, cfg)
+    actions: list[dict[str, str]] = []
+    warnings: list[str] = []
+
+    if _ci_targets_are_placeholders(repo_root) and not force:
+        return {
+            "ok": False,
+            "repo_root": str(repo_root),
+            "language": language,
+            "error": (
+                "verify targets are still TODO(specced) placeholders — a CI gate over them "
+                "would pass without checking anything. Wire up the Makefile (the interview "
+                "does this, or `specced init --preset <name>`), then re-run. --force emits anyway."
+            ),
+        }
+    if _ci_targets_are_placeholders(repo_root):
+        warnings.append(
+            "emitted over placeholder verify targets — the gate is a green no-op until the "
+            "Makefile is wired to real commands."
+        )
+
+    if language not in _CI_SETUP:
+        warnings.append(
+            f"no toolchain-setup template for language '{language}' — emitted a checkout-only "
+            "gate; add your stack's setup step(s) to .github/workflows/specced-gate.yml."
+        )
+    setup_steps = _CI_SETUP.get(language or "", [])
+
+    tmpl = (templates_dir() / "ci" / "github-gate.yml.tmpl").read_text(encoding="utf-8")
+    content = _render(
+        tmpl,
+        {"SETUP_STEPS": "\n".join(setup_steps), "DEFAULT_BRANCH": _default_branch(repo_root)},
+    )
+    _write_file(repo_root / Path(*CI_GATE_REL), content, force, actions)
+
+    if pre_commit:
+        _write_pre_commit(repo_root, actions, force)
+
+    cfg["ci"] = {"github_gate": True, "pre_commit": bool(pre_commit)}
+    cfg["updated_at"] = _now()
+    write_config(repo_root, cfg)
+
+    return {
+        "ok": True,
+        "repo_root": str(repo_root),
+        "language": language,
+        "actions": actions,
+        "warnings": warnings,
+        "next": (
+            "Commit .github/workflows/specced-gate.yml. It runs `make verify` on PRs and "
+            "`make verify-full` on the default branch — the same gate the proof loop uses."
+        ),
+    }
+
+
+def _mcp_suggestions(repo_root: Path) -> list[str]:
+    """Advisory: stack signals (including dependency fingerprints) that map to an MCP
+    server not yet enabled in .mcp.json. Surfaced by ``doctor``; never auto-installed."""
+    try:
+        det = _detect.detect(repo_root)
+    except Exception:
+        return []
+    enabled = set(_enabled_mcp(repo_root))
+    return [
+        f"detected stack suggests MCP '{m}' (not enabled) — `specced add-mcp {m}`"
+        for m in det.get("suggested_mcp", [])
+        if m not in enabled
+    ]
+
+
+# --------------------------------------------------------------------------- #
+# Adopt: absorb an existing hand-built setup (the inverse of init)
+# --------------------------------------------------------------------------- #
+_MAKE_TARGET_RE = re.compile(r"^([A-Za-z0-9_][A-Za-z0-9_./-]*)\s*:(?!=)")
+
+
+def _parse_makefile_targets(repo_root: Path) -> dict[str, str]:
+    """Map target -> recipe (commands joined by ' && ') for an existing Makefile, so
+    `adopt` can derive the verification vocabulary from what the repo already has rather
+    than from a preset. Best-effort: skips ``.PHONY``/pattern rules and ``:=`` assignments."""
+    path = repo_root / "Makefile"
+    if not path.exists():
+        return {}
+    targets: dict[str, str] = {}
+    current: str | None = None
+    recipe: list[str] = []
+
+    def _flush() -> None:
+        nonlocal current, recipe
+        if current is not None:
+            targets[current] = " && ".join(recipe)
+        current, recipe = None, []
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if current is not None and line.startswith("\t"):
+            cmd = re.sub(r"^[@\-]+", "", line[1:].strip())
+            if cmd and not cmd.startswith("#"):
+                recipe.append(cmd)
+            continue
+        m = _MAKE_TARGET_RE.match(line)
+        if m and "%" not in m.group(1) and not m.group(1).startswith("."):
+            _flush()
+            current = m.group(1)
+        else:
+            _flush()
+    _flush()
+    return targets
+
+
+def _inventory_existing(repo_root: Path) -> dict[str, Any]:
+    """Survey the specced-relevant content a repo already has, so `adopt` can plan."""
+
+    def _list_md(rel: tuple[str, ...]) -> list[str]:
+        base = repo_root / Path(*rel)
+        if not base.is_dir():
+            return []
+        return sorted(
+            str(p.relative_to(base)).replace("\\", "/")
+            for p in base.rglob("*.md")
+            if p.name not in ("README.md", "_template.md")
+        )
+
+    agents_dir = repo_root / ".claude" / "agents"
+    skills_dir = repo_root / ".claude" / "skills"
+    cmds_dir = repo_root / ".claude" / "commands"
+    targets = _parse_makefile_targets(repo_root)
+    return {
+        "claude_md": (repo_root / "CLAUDE.md").exists(),
+        "agents_md": (repo_root / "AGENTS.md").exists(),
+        "constitution": (repo_root / "CONSTITUTION.md").exists(),
+        "rules": _list_md((".claude", "rules")),
+        "code_review": _list_md((".claude", "code-review")),
+        "agents": sorted(p.name for p in agents_dir.glob("*.md")) if agents_dir.is_dir() else [],
+        "skills": sorted(d.name for d in skills_dir.iterdir() if d.is_dir())
+        if skills_dir.is_dir()
+        else [],
+        "commands": sorted(p.name for p in cmds_dir.glob("*.md")) if cmds_dir.is_dir() else [],
+        "makefile": (repo_root / "Makefile").exists(),
+        "makefile_targets": targets,
+        "makefile_gates_present": [t for t in ("fmt", "lint", "test", "build") if t in targets],
+        "has_verify": "verify" in targets,
+        "settings_local": (repo_root / ".claude" / "settings.local.json").exists(),
+        "mcp_servers": _enabled_mcp(repo_root),
+        "ci": (repo_root / ".github" / "workflows").is_dir(),
+        "engine_present": (repo_root / ".claude" / "skills" / ENGINE_NAME).is_dir(),
+        "specced_present": config_path(repo_root).exists(),
+    }
+
+
+def _synthesize_checks(
+    repo_root: Path, targets: dict[str, str], actions: list[dict[str, str]], force: bool
+) -> dict[str, Any]:
+    """Write .specced/checks.json from the repo's ACTUAL Makefile targets (not a preset).
+    Falls back to chaining the present gates when there's no `verify` aggregator."""
+    present = [t for t in ("fmt", "lint", "test", "build") if t in targets]
+    has_verify = "verify" in targets
+    has_full = "verify-full" in targets
+    if has_verify:
+        all_cmd: str | None = "make verify"
+    elif present:
+        all_cmd = " && ".join(f"make {t}" for t in present)
+    else:
+        all_cmd = None
+    note = "Synthesized by `specced adopt` from your existing Makefile targets."
+    if not has_verify:
+        note += " No `verify` target found — `all` chains the present gates; add a `verify`/`verify-full` aggregator (or let the interview)."
+    payload = {
+        "all": all_cmd,
+        "all_full": "make verify-full" if has_full else None,
+        "gates": {t: f"make {t}" for t in present},
+        "raw_commands": {t: targets[t] for t in present if targets[t]},
+        "note": note,
+    }
+    _write_file(
+        repo_root / ".specced" / "checks.json", json.dumps(payload, indent=2) + "\n", force, actions
+    )
+    return payload
+
+
+def _adopt_plan(inv: dict[str, Any]) -> list[dict[str, str]]:
+    plan: list[dict[str, str]] = [
+        {
+            "step": "engine",
+            "action": "refresh" if inv["engine_present"] else "install",
+            "detail": "proof-loop engine + 4 task agents"
+            + (" (present — refresh to this version)" if inv["engine_present"] else ""),
+        },
+        {
+            "step": "guide-blocks",
+            "action": "upsert",
+            "detail": "specced managed + orientation blocks in CLAUDE.md/AGENTS.md (existing prose preserved)",
+        },
+    ]
+    if inv["makefile"]:
+        present = ", ".join(inv["makefile_gates_present"]) or "none of fmt/lint/test/build"
+        plan.append(
+            {
+                "step": "checks",
+                "action": "synthesize",
+                "detail": f".specced/checks.json from your Makefile targets ({present})",
+            }
+        )
+        if not inv["has_verify"]:
+            plan.append(
+                {
+                    "step": "gate",
+                    "action": "flag",
+                    "detail": "no `verify` aggregator — checks.json chains present gates; add `verify`/`verify-full` or let the interview",
+                }
+            )
+    else:
+        plan.append(
+            {
+                "step": "checks",
+                "action": "flag",
+                "detail": "no Makefile — the interview must wire a verification vocabulary",
+            }
+        )
+    plan.append(
+        {
+            "step": "permissions",
+            "action": "keep" if inv["settings_local"] else "scaffold",
+            "detail": "pre-authorize your Makefile commands in .claude/settings.local.json"
+            + (" (exists — left as-is)" if inv["settings_local"] else ""),
+        }
+    )
+    plan.append(
+        {"step": "repo-map", "action": "generate", "detail": ".specced/repo-map.md from detection"}
+    )
+    plan.append(
+        {
+            "step": "rules",
+            "action": "keep" if inv["rules"] else "flag",
+            "detail": f"{len(inv['rules'])} existing rule file(s) left as-is — the interview aligns them"
+            if inv["rules"]
+            else "no .claude/rules — the interview authors conventions",
+        }
+    )
+    if inv["code_review"]:
+        plan.append(
+            {
+                "step": "dims",
+                "action": "keep",
+                "detail": f"{len(inv['code_review'])} existing review dimension(s) left as-is",
+            }
+        )
+    plan.append(
+        {
+            "step": "constitution",
+            "action": "keep" if inv["constitution"] else "flag",
+            "detail": "CONSTITUTION.md left untouched"
+            if inv["constitution"]
+            else "no CONSTITUTION.md — the interview authors the non-negotiables",
+        }
+    )
+    if inv["mcp_servers"]:
+        plan.append(
+            {
+                "step": "mcp",
+                "action": "adopt",
+                "detail": f"record existing .mcp.json servers: {', '.join(inv['mcp_servers'])}",
+            }
+        )
+    return plan
+
+
+def _adopt_followups(inv: dict[str, Any]) -> list[str]:
+    """The semantic work adopt leaves to the bootstrap interview (it won't guess)."""
+    out: list[str] = []
+    if inv["claude_md"]:
+        out.append(
+            "Classify freeform CLAUDE.md guidance into CONSTITUTION clauses vs `.claude/rules/` vs review dimensions."
+        )
+    if inv["rules"]:
+        out.append(
+            f"Align the {len(inv['rules'])} existing rule(s) to specced's one-line, checkable idiom; split any that mix concerns."
+        )
+    else:
+        out.append("Author `.claude/rules/<track>/*.md` conventions from the code.")
+    if not inv["constitution"]:
+        out.append("Author CONSTITUTION.md — the hard, enforced-today invariants.")
+    if not inv["code_review"]:
+        out.append("Author review dimensions in `.claude/code-review/NN-*.md`.")
+    if inv["makefile"] and not inv["has_verify"]:
+        out.append("Add `verify`/`verify-full` aggregator targets so the gate has one entry point.")
+    out.append(
+        "Run the specced-bootstrap interview to do the above from the code, then `specced doctor`."
+    )
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # Config (.specced/config.json) — the durable record of what was decided
 # --------------------------------------------------------------------------- #
 def config_path(repo_root: Path) -> Path:
@@ -670,6 +1058,69 @@ def init_repo(
     return report
 
 
+def adopt(repo_root: Path, *, apply: bool = False) -> dict[str, Any]:
+    """Absorb an existing hand-built setup into specced management — the inverse of init.
+
+    Dry-run by default: the **plan** is the deliverable. ``apply=True`` executes only the
+    mechanical, non-destructive steps — it CREATES specced-owned files and UPSERTS managed
+    blocks (which preserve surrounding prose), and never rewrites the repo's Makefile,
+    CONSTITUTION, rules, dimensions, or .mcp.json. The semantic work (classifying prose,
+    aligning rules, authoring missing layers) is handed to the interview as followups."""
+    detection = _detect.detect(repo_root)
+    inv = _inventory_existing(repo_root)
+    found = {k: v for k, v in inv.items() if k != "makefile_targets"}
+    found["makefile_targets"] = sorted(inv["makefile_targets"])
+
+    result: dict[str, Any] = {
+        "repo_root": str(repo_root),
+        "mode": "applied" if apply else "plan",
+        "detection_summary": detection.get("summary"),
+        "found": found,
+        "plan": _adopt_plan(inv),
+        "interview_followups": _adopt_followups(inv),
+    }
+
+    if not apply:
+        result["next"] = (
+            "Review the plan, then `specced adopt --apply` to run the mechanical steps. "
+            "The interview_followups are authored by the specced-bootstrap interview."
+        )
+        return result
+
+    actions: list[dict[str, str]] = []
+    _install_engine(repo_root, actions, force=True)
+    _install_agents(repo_root, actions)
+    _install_managed_blocks(repo_root, actions)
+    if inv["makefile"]:
+        _synthesize_checks(repo_root, inv["makefile_targets"], actions, force=True)
+    _install_permissions(repo_root, {"make": inv["makefile_targets"]}, actions, force=False)
+    _write_repo_map(repo_root, detection, None, actions, force=True)
+
+    cfg = read_config(repo_root)
+    cfg.setdefault("created_at", _now())
+    cfg.setdefault("skills", inv["skills"])
+    cfg["adopted"] = True
+    cfg["adopted_at"] = _now()
+    cfg["preset"] = None  # adopt never applies a preset's content over the user's own
+    cfg["detected_preset"] = detection.get("suggested_preset")
+    cfg["tracks"] = detection.get("tracks", [])
+    cfg["mcp_servers"] = inv["mcp_servers"]
+    cfg["specced_version"] = SPECCED_VERSION
+    cfg["engine"] = _engine_record()
+    cfg["updated_at"] = _now()
+    write_config(repo_root, cfg)
+    actions.append({"path": str(config_path(repo_root)), "action": "wrote config (adopted)"})
+
+    _install_orientation(repo_root, cfg, actions)
+
+    result["actions"] = actions
+    result["next"] = (
+        "Mechanical adoption done. Run the specced-bootstrap interview for the semantic "
+        "steps (see interview_followups), then `specced doctor`."
+    )
+    return result
+
+
 def list_library_skills() -> list[str]:
     root = templates_dir() / "skills"
     if not root.is_dir():
@@ -754,6 +1205,7 @@ def doctor(repo_root: Path) -> dict[str, Any]:
         "ok": ok,
         "checks": checks,
         "warnings": _content_warnings(repo_root),
+        "suggestions": _mcp_suggestions(repo_root),
     }
 
 

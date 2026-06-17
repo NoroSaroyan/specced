@@ -17,6 +17,8 @@ Install any of these with `specced add-skill <name>`:
 | `new-domain-skill` | Creating a new project-specific skill for a recurring task. |
 | `decision-record` | Recording a significant/architectural decision as an ADR. |
 | `capture-rule` | Turning a user correction or preference into a durable rule or ADR. |
+| `learn-from-review` | Mining recurring review findings (`specced stats`) into durable rules. |
+| `promote-constitution` | Auditing `CONSTITUTION.md`: promoting now-enforced "direction" invariants. |
 
 ### Build
 | Skill | Use when |

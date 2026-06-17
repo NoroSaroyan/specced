@@ -36,5 +36,16 @@ End with a one-line verdict: **block** (any Critical), **approve with nits**
 (Important/Minor only), or **approve** (clean). If reviewing a proof-loop task,
 write findings the fixer can act on and stop short of editing code yourself.
 
+Then emit one machine-readable **trailer** as the final line — a structured echo of the
+sources you already cited, so `specced stats` can mine which review dimensions and rules
+actually fire (the feedback loop that keeps this setup honest):
+
+```
+Specced-Review: verdict=<block|approve-nits|approve> dims=<NN-slug,…> rules=<track/file.md,…> cites=<CONSTITUTION§n,…>
+```
+
+List only dimensions that produced a finding and the rule/constitution sources you cited;
+drop any field that is empty.
+
 > TODO(specced): If this project needs review steps beyond the generic dimensions
 > (e.g. a required command to run, a contract test), add them here.

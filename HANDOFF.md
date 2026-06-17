@@ -40,7 +40,7 @@ src/specced/
   _paths.py      # shared templates_dir (avoids scaffold<->detect import cycle)
   templates/     # SINGLE source of truth (shipped in the wheel)
     skills/repo-task-proof-loop/  # vendored engine (do not edit; see NOTICE)
-    skills/<name>/                # 17 library skills
+    skills/<name>/                # 19 library skills
     presets/*.json                # 13 stack presets (data-driven `detect` block each)
     mcp/servers.json              # 7-server MCP catalog
     project/                      # CONSTITUTION / settings / mcp / Makefile templates
@@ -81,10 +81,58 @@ Dev loop: `make install` then `make verify` (ruff + pytest + build = the CI gate
 Conclusion: **mechanics for free + interview authors the domain layer ≈ an expert hand-built
 setup.** The thesis holds against the gold standard.
 
+## Landed since v0.1.2 (unreleased, in `main`)
+
+The **day-2 lifecycle** thread — get a setup *in* → *enforce* it → *evolve* it. Full
+design + decisions in `docs/proposals/ci-gate-and-signal.md`.
+
+- **`specced ci`** — emits `.github/workflows/specced-gate.yml` running the same gate
+  (`make verify` on PRs, `make verify-full` on the default branch). Toolchain setup is
+  keyed off the preset language (all 6). Refuses over `TODO(specced)` placeholder targets
+  (the no-op-CI guard) unless `--force`; `--pre-commit` adds a fast hook. Non-clobber like
+  init; `sync` deliberately leaves CI alone (re-run `specced ci --force`).
+- **Signal convention (the keystone for the loop):** `code-review` and `capture-rule`
+  now emit machine-readable trailers (`Specced-Review:` / `Specced-Rule:`; grammar in the
+  proposal). Combined with the engine's existing `.agent/tasks/*/verdict.json` (PASS/FAIL,
+  commands, changed files), these are the sources a future `specced stats` mines — no
+  committed run-log, no engine edits.
+- **Deps-based MCP detection** (closes the old "beyond compose" gap): `detect()` collects
+  `dep_signals` from go.mod / pyproject+requirements / package.json; `suggest_mcp` maps
+  them (postgres, qdrant, sentry, playwright, supabase); `doctor` returns a `suggestions`
+  list for servers the stack implies but `.mcp.json` hasn't enabled. Advisory, not auto-add.
+- **`specced stats`** (the loop's read side) — new `src/specced/stats.py` module + CLI
+  command. Read-only miner over the three signal sources (proof-loop `verdict.json`/
+  `evidence.json`, the git-history trailers, and `gh` CI runs; each best-effort, reported
+  in `notes` when absent). Surfaces gate pass/fail health, per-rule & per-dimension
+  citation counts, **dead rules**, `phantom` citations, review-verdict tallies, and
+  changed-file hotspots. `signal_present` is false until there's activity to mine.
+- **`specced adopt`** (the inverse of init) — absorb an existing hand-built setup.
+  **Dry-run by default** (the `plan` + `found` inventory + `interview_followups` are the
+  deliverable); `--apply` runs only mechanical, non-destructive steps. Safety boundary:
+  CREATES specced-owned files + UPSERTS managed blocks (prose preserved), and NEVER
+  rewrites the Makefile, CONSTITUTION, rules, dims, or `.mcp.json`. Standout mechanic:
+  synthesizes `checks.json` + the permission allowlist from the repo's **actual Makefile
+  targets** (`_parse_makefile_targets`), chaining present gates when there's no `verify`.
+  Records existing `.mcp.json` servers + detected stack in config. Semantic work (classify
+  prose, align rules, author missing layers) is handed to the interview as followups.
+- **Loop write side** — two new library skills (19 total now): **`learn-from-review`**
+  (mine recurring `Specced-Review:` findings → cluster → author rules via `capture-rule`)
+  and **`promote-constitution`** (audit CONSTITUTION's enforced-today vs direction split,
+  promote items now backed by a check/cited rule). The CLI half is deterministic: `specced
+  stats` gained a `candidates.rules_from_reviews` block (dimensions that produced findings
+  citing no rule, ≥2× = recurring & un-encoded) that `learn-from-review` consumes. The
+  clustering/judgment itself is intentionally skill-side (semantic), not CLI.
+
+**The day-2 lifecycle thread is now complete** — get a setup *in* (`adopt`), *enforce* it
+(`ci` + signal), *observe* it (`stats`), *evolve* it (`learn-from-review` +
+`promote-constitution`). The chosen non-pick was multi-agent compile (Cursor/Copilot/etc.
+emitters from the one template tree) — still the strongest *breadth* play if reach matters
+next. Other open items live in *Known gaps* below.
+
 ## Known gaps / deferred (good first issues)
 
-- **Detection beyond compose:** infer DBs from deps (go.mod pgx/qdrant, pyproject
-  psycopg/sqlalchemy, package.json pg/prisma), not just docker-compose.
+- ~~**Detection beyond compose:**~~ done — deps-based MCP signals (see *Landed* above).
+  Still room to infer *more* (cache/queue servers, ORMs → migration tooling).
 - **`settings.local.json` merge:** today `init` *skips* an existing one (safe) — could merge
   specced's verify-command allowlist into it instead.
 - **No `commands` concept:** ContextGate has `.claude/commands` (eval, nfr-check); specced
